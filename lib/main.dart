@@ -31,11 +31,13 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'Curved Gradient Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        //primarySwatch: Colors.blue,
+        colorSchemeSeed: Colors.blue,
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
-        primarySwatch: Colors.blue,
+        //primarySwatch: Colors.blue,
+        colorSchemeSeed: Colors.blue,
         useMaterial3: true,
         brightness: Brightness.dark,
       ),
@@ -55,11 +57,14 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late Color _dialogPickerColorFrom =
-          const Color(0xFFFF7043) /*Color(0xFFE91E63)*/,
-      _dialogPickerColorTo = const Color(0xFFD81B60) /*Color(0xFF8E24AA)*/;
+  late Color _dialogPickerColorFrom = const Color(0xFFFF7043),
+      _dialogPickerColorTo = const Color(0xFFD81B60);
+
+  /*late Color _dialogPickerColorFrom = const Color(0xFFE91E63),
+      _dialogPickerColorTo = const Color(0xFF8E24AA);*/
 
   final ScrollController _scrollController = ScrollController();
+  late bool _shouldUseWebSmoothScroll = true;
 
   final Map<String, Curve> _curves = <String, Curve>{
     'Linear': Curves.linear,
@@ -223,6 +228,24 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((Duration timeStamp) {
+      setState(() {
+        _shouldUseWebSmoothScroll = kIsWeb &&
+            Theme.of(context).platform != TargetPlatform.android &&
+            Theme.of(context).platform != TargetPlatform.iOS;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
       if (Theme.of(context).platform == TargetPlatform.android ||
@@ -251,10 +274,7 @@ class _MyHomePageState extends State<MyHomePage> {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: <Widget>[
-                const Text(
-                  'From: ',
-                  //style: TextStyle(color: Colors.black),
-                ),
+                const Text('From: '),
                 const SizedBox(width: 4.0),
                 Expanded(
                   child: ColorIndicator(
@@ -283,10 +303,7 @@ class _MyHomePageState extends State<MyHomePage> {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: <Widget>[
-                const Text(
-                  'To: ',
-                  //style: TextStyle(color: Colors.black),
-                ),
+                const Text('To: '),
                 const SizedBox(width: 4.0),
                 Expanded(
                   child: ColorIndicator(
@@ -314,20 +331,13 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       body: ConditionalParent(
-        wrap: kIsWeb &&
-            Theme.of(context).platform != TargetPlatform.android &&
-            Theme.of(context).platform != TargetPlatform.iOS,
+        wrap: _shouldUseWebSmoothScroll,
+        scrollController: _shouldUseWebSmoothScroll ? _scrollController : null,
         child: GridView.builder(
-          physics: kIsWeb &&
-                  Theme.of(context).platform != TargetPlatform.android &&
-                  Theme.of(context).platform != TargetPlatform.iOS
+          physics: _shouldUseWebSmoothScroll
               ? const NeverScrollableScrollPhysics()
               : const ClampingScrollPhysics(),
-          controller: kIsWeb &&
-                  Theme.of(context).platform != TargetPlatform.android &&
-                  Theme.of(context).platform != TargetPlatform.iOS
-              ? _scrollController
-              : null,
+          controller: _shouldUseWebSmoothScroll ? _scrollController : null,
           itemCount: _curves.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3, mainAxisExtent: 128.0, mainAxisSpacing: 12.0),
@@ -366,11 +376,24 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+}
 
-  Widget ConditionalParent({required bool wrap, required Widget child}) {
+class ConditionalParent extends StatelessWidget {
+  const ConditionalParent(
+      {Key? key,
+      required this.wrap,
+      required this.child,
+      required this.scrollController})
+      : super(key: key);
+  final bool wrap;
+  final Widget child;
+  final ScrollController? scrollController;
+
+  @override
+  Widget build(BuildContext context) {
     return wrap
         ? WebSmoothScroll(
-            controller: _scrollController,
+            controller: scrollController!,
             child: child,
           )
         : child;
