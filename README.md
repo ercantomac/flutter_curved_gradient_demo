@@ -1,6 +1,8 @@
 # curved_gradient_demo
 
-A new Flutter project.
+A visualizer for the [curved_gradient](https://pub.dev/packages/curved_gradient) Flutter package.
+
+## Working Demo: https://animated-kheer-04028e.netlify.app/
 
 ## Getting Started
 
